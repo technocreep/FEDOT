@@ -94,8 +94,10 @@ class DataMerger:
             idx, features, target, is_main_target, task = self._merge_non_equal_outputs(self.outputs,
                                                                                         idx_list)
 
-        features = np.ravel(np.array(features))
-        target = np.ravel(np.array(target))
+        if len(features.shape) and features.shape[1] == 1:
+            features = np.ravel(np.array(features))
+        if len(target.shape) > 1 and target.shape[1] == 1:
+            target = np.ravel(np.array(target))
         return idx, features, target, is_main_target, task
 
     @staticmethod
