@@ -43,7 +43,7 @@ def prepare_data():
     q_obs_train = q_obs[:n_train, :]
     q_obs_test = q_obs[n_train:, :]
 
-    forecast_length = 2
+    forecast_length = 3
 
     ds_train = {}
     ds_test = {}
@@ -51,7 +51,7 @@ def prepare_data():
     for i in range(q_obs.shape[1]):
         ds_train[f'data_source_ts/prod_{i}'] = InputData(idx=np.arange(0, n_train),
                                                          features=q_obs[:n_train, i][..., np.newaxis],
-                                                         target=q_obs_train,
+                                                         target=q_obs_train[:, 0],
                                                          data_type=DataTypesEnum.ts,
                                                          task=Task(TaskTypesEnum.ts_forecasting,
                                                                    task_params=TsForecastingParams(
@@ -59,14 +59,14 @@ def prepare_data():
 
         ds_test[f'data_source_ts/prod_{i}'] = InputData(idx=np.arange(n_train, len(t_arr)),
                                                         features=q_obs[:n_train, i][..., np.newaxis],
-                                                        target=q_obs_test,
+                                                        target=q_obs_test[:, 0],
                                                         data_type=DataTypesEnum.ts,
                                                         task=Task(TaskTypesEnum.ts_forecasting,
                                                                   task_params=TsForecastingParams(
                                                                       forecast_length=forecast_length)))
     for i in range(qi_arr.shape[1]):
-        ds_train[f'data_source_ts/inj_{i}'] = InputData(idx=np.arange(0, n_train),
-                                                        features=qi_arr[:n_train, i][..., np.newaxis],
+        ds_train[f'data_source_ts/inj_{i}'] = InputData(idx=np.arange(0, len(t_arr)),
+                                                        features=qi_arr[:, i][..., np.newaxis],
                                                         target=q_obs_train,
                                                         data_type=DataTypesEnum.ts,
                                                         task=Task(TaskTypesEnum.ts_forecasting,
