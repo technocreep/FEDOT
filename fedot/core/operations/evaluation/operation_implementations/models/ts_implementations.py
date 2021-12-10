@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from scipy import stats
-from scipy.special import inv_boxcox, boxcox
+from scipy.special import boxcox, inv_boxcox
 from sklearn.preprocessing import StandardScaler
 from statsmodels.tsa.api import STLForecast
 from statsmodels.tsa.ar_model import AutoReg
@@ -15,7 +15,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from fedot.core.data.data import InputData
 from fedot.core.log import Log
 from fedot.core.operations.evaluation.operation_implementations.data_operations.ts_transformations import \
-    ts_to_table, prepare_target, LaggedTransformationImplementation
+    prepare_target, ts_to_table
 from fedot.core.operations.evaluation. \
     operation_implementations.implementation_interfaces import ModelImplementation
 from fedot.core.pipelines.ts_wrappers import _update_input, exception_if_not_ts_task
