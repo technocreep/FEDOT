@@ -31,14 +31,11 @@ def prepare_data():
     PrdList = [x for x in qp.keys() if x.startswith('P')]
     t_arr = qi[time_colname].values[:num_items]
 
-    N_inj = len(InjList)
-    N_prd = len(PrdList)
     qi_arr = qi[InjList].values[:num_items, :]
     q_obs = qp[PrdList].values[:num_items, :]
 
     # Separation into training and test set
-
-    n_train = int(percent_train * len(t_arr))
+    n_train = round(percent_train * len(t_arr))
 
     q_obs_train = q_obs[:n_train, :]
     q_obs_test = q_obs[n_train:, :]
@@ -48,39 +45,33 @@ def prepare_data():
     ds_train = {}
     ds_test = {}
 
+    task = Task(TaskTypesEnum.ts_forecasting,
+                task_params=TsForecastingParams(forecast_length=forecast_length))
     for i in range(q_obs.shape[1]):
         ds_train[f'data_source_ts/prod_{i}'] = InputData(idx=np.arange(0, n_train),
-                                                         features=q_obs[:n_train, i][..., np.newaxis],
+                                                         features=q_obs_train[:, i],
                                                          target=q_obs_train[:, 0],
                                                          data_type=DataTypesEnum.ts,
-                                                         task=Task(TaskTypesEnum.ts_forecasting,
-                                                                   task_params=TsForecastingParams(
-                                                                       forecast_length=forecast_length)))
+                                                         task=task)
 
-        ds_test[f'data_source_ts/prod_{i}'] = InputData(idx=np.arange(n_train, len(t_arr)),
-                                                        features=q_obs[:n_train, i][..., np.newaxis],
-                                                        target=q_obs_test[:, 0],
+        ds_test[f'data_source_ts/prod_{i}'] = InputData(idx=np.arange(n_train, n_train + forecast_length),
+                                                        features=q_obs_train[:, i],
+                                                        target=q_obs_test[:forecast_length, 0],
                                                         data_type=DataTypesEnum.ts,
-                                                        task=Task(TaskTypesEnum.ts_forecasting,
-                                                                  task_params=TsForecastingParams(
-                                                                      forecast_length=forecast_length)))
+                                                        task=task)
     # for i in range(qi_arr.shape[1]):
     i = 0
-    ds_train[f'data_source_ts/inj_{i}'] = InputData(idx=np.arange(0, len(t_arr)),
-                                                    features=qi_arr[:, 0][..., np.newaxis],
+    ds_train[f'data_source_ts/inj_{i}'] = InputData(idx=np.arange(0, n_train),
+                                                    features=qi_arr[:n_train, 0],
                                                     target=q_obs_train[:, 0],
                                                     data_type=DataTypesEnum.ts,
-                                                    task=Task(TaskTypesEnum.ts_forecasting,
-                                                              task_params=TsForecastingParams(
-                                                                  forecast_length=forecast_length)))
+                                                    task=task)
 
-    ds_test[f'data_source_ts/inj_{i}'] = InputData(idx=np.arange(n_train, len(t_arr)),
-                                                   features=qi_arr[n_train:, i][..., np.newaxis],
-                                                   target=q_obs_test[:, 0],
+    ds_test[f'data_source_ts/inj_{i}'] = InputData(idx=np.arange(n_train, n_train + forecast_length),
+                                                   features=qi_arr[: n_train + forecast_length, i],
+                                                   target=q_obs_test[:forecast_length, 0],
                                                    data_type=DataTypesEnum.ts,
-                                                   task=Task(TaskTypesEnum.ts_forecasting,
-                                                             task_params=TsForecastingParams(
-                                                                 forecast_length=forecast_length)))
+                                                   task=task)
     input_data_train = MultiModalData(ds_train)
     input_data_test = MultiModalData(ds_test)
 
