@@ -51,7 +51,7 @@ def prepare_data():
     for i in range(q_obs.shape[1]):
         ds_train[f'data_source_ts/prod_{i}'] = InputData(idx=np.arange(0, n_train),
                                                          features=q_obs[:n_train, i][..., np.newaxis],
-                                                         target=q_obs_train[:, i],
+                                                         target=q_obs_train[:, 0],
                                                          data_type=DataTypesEnum.ts,
                                                          task=Task(TaskTypesEnum.ts_forecasting,
                                                                    task_params=TsForecastingParams(
@@ -59,7 +59,7 @@ def prepare_data():
 
         ds_test[f'data_source_ts/prod_{i}'] = InputData(idx=np.arange(n_train, len(t_arr)),
                                                         features=q_obs[:n_train, i][..., np.newaxis],
-                                                        target=q_obs_test[:, i],
+                                                        target=q_obs_test[:, 0],
                                                         data_type=DataTypesEnum.ts,
                                                         task=Task(TaskTypesEnum.ts_forecasting,
                                                                   task_params=TsForecastingParams(
