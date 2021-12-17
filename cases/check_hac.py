@@ -18,7 +18,7 @@ def run_exp(clip_data: bool = False,  safe_mode: bool = False):
     :param safe_mode: is there a need to perform safe mode in AutoML
     """
 
-    data = pd.read_csv('raif.csv')
+    data = pd.read_csv('../cases/data/rh_train.csv')
     print(f'Dataset size: {data.shape}')
     if clip_data is True:
         # Crop dataset for albert correctness check
@@ -42,4 +42,4 @@ def run_exp(clip_data: bool = False,  safe_mode: bool = False):
 
 
 if __name__ == '__main__':
-    run_exp(clip_data=False, safe_mode=False)
+    run_exp(clip_data=True, safe_mode=True)
