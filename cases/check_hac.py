@@ -13,7 +13,7 @@ from fedot.core.utils import fedot_project_root
 
 
 def run_exp(clip_data: bool = False,  safe_mode: bool = False):
-    """ Start classification task with desired dataset
+    """ Start regression task with raiff hack dataset
     :param clip_data: is there a need to clip dataframe
     :param safe_mode: is there a need to perform safe mode in AutoML
     """
@@ -33,8 +33,8 @@ def run_exp(clip_data: bool = False,  safe_mode: bool = False):
     target = np.array(data['per_square_meter_price'])
 
     start = timeit.default_timer()
-    fedot = Fedot(problem='classification', timeout=0.5, safe_mode=safe_mode)
-    pipeline = fedot.fit(features=predictors, target=target, predefined_model='dt')
+    fedot = Fedot(problem='regression', timeout=0.5, safe_mode=safe_mode)
+    pipeline = fedot.fit(features=predictors, target=target, predefined_model='auto')
     fedot_predict = np.ravel(fedot.predict(predictors))
     print(fedot_predict)
     time_launch = timeit.default_timer() - start
@@ -42,4 +42,4 @@ def run_exp(clip_data: bool = False,  safe_mode: bool = False):
 
 
 if __name__ == '__main__':
-    run_exp(clip_data=False, safe_mode=True)
+    run_exp(clip_data=False, safe_mode=False)
