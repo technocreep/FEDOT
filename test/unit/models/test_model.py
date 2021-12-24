@@ -1,11 +1,15 @@
+import os
+import random
 from copy import deepcopy
 
 import numpy as np
+import pandas as pd
 import pytest
 from sklearn.datasets import make_classification
 from sklearn.metrics import mean_absolute_error, mean_squared_error, roc_auc_score as roc_auc
 from sklearn.preprocessing import MinMaxScaler
 
+from fedot.api.main import Fedot
 from fedot.core.data.data import InputData, OutputData
 from fedot.core.data.data_split import train_test_data_setup
 from fedot.core.data.supplementary_data import SupplementaryData
@@ -16,12 +20,12 @@ from fedot.core.operations.evaluation.operation_implementations.models.discrimin
 from fedot.core.operations.evaluation.operation_implementations.models.ts_implementations.statsmodels import \
     GLMImplementation
 from fedot.core.operations.model import Model
-from fedot.core.pipelines.node import PrimaryNode, get_default_params
+from fedot.core.pipelines.node import PrimaryNode, get_default_params, SecondaryNode
 from fedot.core.pipelines.pipeline import Pipeline
 from fedot.core.repository.dataset_types import DataTypesEnum
 from fedot.core.repository.operation_types_repository import OperationTypesRepository
 from fedot.core.repository.tasks import Task, TaskTypesEnum, TsForecastingParams
-from fedot.core.utils import DEFAULT_PARAMS_STUB
+from fedot.core.utils import DEFAULT_PARAMS_STUB, fedot_project_root
 from test.unit.tasks.test_forecasting import get_ts_data, get_ts_data_with_dt_idx
 from test.unit.tasks.test_regression import get_synthetic_regression_data
 
@@ -56,6 +60,22 @@ def get_lda_incorrect_data():
                            features=features,
                            target=target, task=task,
                            data_type=DataTypesEnum.table,
+                           supplementary_data=SupplementaryData(was_preprocessed=False))
+    return input_data
+
+
+def arima_incorrect_data():
+    """ Prepare time series data for multitarget """
+    path = os.path.join(fedot_project_root(), 'test', 'data', 'short_time_series.csv')
+    df = pd.read_csv(path)
+    time_series = np.array(df['sea_height'])
+
+    task = Task(TaskTypesEnum.ts_forecasting,
+                task_params=TsForecastingParams(forecast_length=2))
+    input_data = InputData(idx=[0, 1, 2, 3, 4, 5],
+                           features=time_series,
+                           target=time_series, task=task,
+                           data_type=DataTypesEnum.ts,
                            supplementary_data=SupplementaryData(was_preprocessed=False))
     return input_data
 
@@ -287,3 +307,21 @@ def test_lda_model_fit_with_incorrect_data():
     params, changed_hyperparams = lda_model.get_params()
 
     assert changed_hyperparams[0] == 'solver'
+
+
+def test_imitate_remote_test():
+    composer_params = {
+        'pop_size': 10,
+        'timeout': 0.2,
+        'cv_folds': None
+    }
+    preset = 'light'
+    automl = Fedot(problem='ts_forecasting', preset=preset, composer_params=composer_params,
+                   task_params=TsForecastingParams(forecast_length=1))
+
+    node_lagged = PrimaryNode('lagged')
+    pipeline = Pipeline(SecondaryNode('stl_arima', nodes_from=[node_lagged]))
+    path = os.path.join(fedot_project_root(), 'test', 'data', 'short_time_series.csv')
+    automl.fit(path, target='sea_height', predefined_model=pipeline)
+    predict = automl.predict(path)
+    assert predict is not None
