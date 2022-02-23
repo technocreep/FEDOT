@@ -10,6 +10,7 @@ from fedot.core.dag.graph_node import GraphNode
 from fedot.core.data.data import InputData
 from fedot.core.data.multi_modal import MultiModalData
 from fedot.core.log import Log, default_log
+from fedot.core.operations.data_operation import DataOperation
 from fedot.core.operations.model import Model
 from fedot.core.optimisers.timer import Timer
 from fedot.core.optimisers.utils.population_utils import input_data_characteristics
@@ -142,7 +143,10 @@ class Pipeline(Graph):
         :param time_constraint: time constraint for operation fitting (seconds)
         """
         if not use_fitted:
-            self.unfit(unfit_preprocessor=True)
+            self.unfit(mode='all', unfit_preprocessor=True)
+        else:
+            self.unfit(mode='data_operations', unfit_preprocessor=False)
+
 
         # Make copy of the input data to avoid performing inplace operations
         copied_input_data = deepcopy(input_data)
@@ -169,12 +173,13 @@ class Pipeline(Graph):
     def is_fitted(self):
         return all([(node.fitted_operation is not None) for node in self.nodes])
 
-    def unfit(self, unfit_preprocessor: bool = True):
+    def unfit(self, mode='all', unfit_preprocessor: bool = True):
         """
         Remove fitted operations for all nodes.
         """
         for node in self.nodes:
-            node.unfit()
+            if mode == 'all' or (mode == 'data_operations' and type(node.content['name']) == DataOperation):
+                node.unfit()
 
         if unfit_preprocessor:
             self.preprocessor = DataPreprocessor(self.log)
