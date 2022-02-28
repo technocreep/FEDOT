@@ -11,7 +11,7 @@ from fedot.core.optimisers.gp_comp.gp_operators import random_graph
 from fedot.core.optimisers.gp_comp.individual import Individual
 from fedot.core.optimisers.graph import OptGraph, OptNode
 from fedot.core.optimisers.opt_history import ParentOperator
-from fedot.core.pipelines.pipeline import Pipeline
+from fedot.core.pipelines.validation import validate
 from fedot.core.utils import DEFAULT_PARAMS_STUB, ComparableEnum as Enum
 
 if TYPE_CHECKING:
@@ -128,8 +128,10 @@ def mutation(types: List[Union[MutationTypesEnum, Callable]], params: 'GraphGene
                                                                requirements=requirements, params=params,
                                                                max_depth=max_depth)
 
-        is_correct_graph = constraint_function(new_graph, params)
-        if is_correct_graph:
+        try:
+            rules = params.rules_for_constraint
+            object_for_validation = params.adapter.restore(deepcopy(new_graph))
+            validate(object_for_validation, rules, params.advisor.task)
             new_individual = Individual(new_graph)
             if add_to_history:
                 new_individual = Individual(new_graph)
@@ -140,6 +142,8 @@ def mutation(types: List[Union[MutationTypesEnum, Callable]], params: 'GraphGene
                                        operator_name=str(mutation_name),
                                        parent_objects=[ind]))
             return new_individual
+        except ValueError:
+            pass
 
     log.debug('Number of mutation attempts exceeded. '
               'Please check composer requirements for correctness.')
