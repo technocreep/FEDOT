@@ -6,6 +6,7 @@ from fedot.core.data.multi_modal import MultiModalData
 from fedot.core.pipelines.node import Node, PrimaryNode, SecondaryNode
 from fedot.core.pipelines.pipeline import Pipeline
 from fedot.core.repository.tasks import Task, TaskTypesEnum
+from fedot.core.repository.dataset_types import DataTypesEnum
 
 NOT_FITTED_ERR_MSG = 'Model not fitted yet'
 
@@ -15,13 +16,14 @@ class ApiInitialAssumptions:
                                data: Union[InputData, MultiModalData],
                                task: Task) -> List[Pipeline]:
 
+        data_type = data.data_type == DataTypesEnum.multi_ts
         has_categorical_features = data_has_categorical_features(data)
         has_gaps = data_has_missing_values(data)
 
         if isinstance(data, MultiModalData):
             initial_assumption = self.create_multidata_pipelines(task, data, has_categorical_features, has_gaps)
         elif isinstance(data, InputData):
-            initial_assumption = self.create_unidata_pipelines(task, has_categorical_features, has_gaps)
+            initial_assumption = self.create_unidata_pipelines(task, has_categorical_features, has_gaps, data_type)
         else:
             raise NotImplementedError(f"Don't handle {type(data)}")
         return initial_assumption
@@ -29,14 +31,18 @@ class ApiInitialAssumptions:
     def create_unidata_pipelines(self,
                                  task: Task,
                                  has_categorical_features: bool,
-                                 has_gaps: bool) -> List[Pipeline]:
+                                 has_gaps: bool,
+                                 has_multy_ts_type: bool) -> List[Pipeline]:
         # TODO refactor as builder
         node_prepocessed = preprocessing_builder(task.task_type, has_gaps, has_categorical_features)
         if task.task_type == TaskTypesEnum.ts_forecasting:
-            pipelines = [create_glm_ridge_pipeline(node_prepocessed),
-                         create_lagged_ridge_pipeline(node_prepocessed),
-                         create_polyfit_ridge_pipeline(node_prepocessed),
-                         create_ar_pipeline(node_prepocessed)]
+            if has_multy_ts_type:
+                pipelines = [create_lagged_ridge_pipeline(node_prepocessed)]
+            else:
+                pipelines = [create_glm_ridge_pipeline(node_prepocessed),
+                             create_lagged_ridge_pipeline(node_prepocessed),
+                             create_polyfit_ridge_pipeline(node_prepocessed),
+                             create_ar_pipeline(node_prepocessed)]
         elif task.task_type == TaskTypesEnum.classification:
             if has_categorical_features:
                 pipelines = [create_rf_classifier_pipeline(node_prepocessed)]
